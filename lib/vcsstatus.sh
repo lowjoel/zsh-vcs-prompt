@@ -37,7 +37,9 @@ zstyle ':vcs_info:*' max-exports 5
 
 # To be enable check-for-changes with hg.
 zstyle ':vcs_info:hg:*' get-revision true
+zstyle ':vcs_info:hg*:*' 'check-for-changes' true
 zstyle ':vcs_info:(git|hg|bzr):*' use-simple true
+zstyle ':vcs_info:hg*' actionformats "(%s|%a)[%i%u %b %m]"
 
 ## Set formats.
 #
@@ -54,7 +56,7 @@ zstyle ':vcs_info:(git|hg|bzr):*' use-simple true
 zstyle ':vcs_info:*' formats '%s' '%b' '%m'
 zstyle ':vcs_info:*' actionformats '%s' '%b' '%m' '%a'
 
-zstyle ':vcs_info:(git|hg):*' check-for-changes false
+zstyle ':vcs_info:(git):*' 'check-for-changes' false
 
 
 # Check zsh version.
@@ -85,7 +87,13 @@ function _zsh_vcs_prompt_vcs_detail_info() {
 
     # Get git status.
     if is-at-least 4.3.11; then
+        if [ "$vcs_name" = 'git' ]; then
         git_status=$vcs_info_msg_2_
+        else
+            if [ "$vcs_name" = 'hg' ]; then
+                git_status=$(_zsh_vcs_prompt_get_hg_status)\
+            fi
+        fi
     else
         if [ "$vcs_name" = 'git' ]; then
             git_status=$(_zsh_vcs_prompt_get_git_status "$vcs_branch_name")
@@ -107,6 +115,38 @@ function +vi-git-hook-detail-info() {
     git_status=$(_zsh_vcs_prompt_get_git_status "$hook_com[branch]")
     hook_com[misc]+=$git_status
     return 0
+}
+
+function _zsh_vcs_prompt_get_hg_status() {
+    local outgoing
+    local incoming
+    local clean
+
+    outgoing=$(hg prompt '{outgoing|count}')
+    if [ -z "$outgoing" ]; then
+        outgoing='0'
+    fi
+    echo $outgoing
+
+    incoming=$(hg prompt '{incoming|count}')
+    if [ -z "$incoming" ]; then
+        incoming='0'
+    fi
+    echo $incoming
+    echo 0
+    echo 0
+    echo 0
+    echo 0
+    echo 0
+    
+    clean=$(hg prompt '{status}')
+    if [ "$clean" = "!" ]; then
+        clean=0
+    else
+        clean=1
+    fi;
+    echo $clean
+    echo 0
 }
 
 # $1 : Branch name.
